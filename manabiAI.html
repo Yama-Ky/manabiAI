@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>まなびAI</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+
+:root {
+  --bg: #0f1923;
+  --card: #1a2635;
+  --accent: #4fc3f7;
+  --accent2: #81c784;
+  --accent3: #ffb74d;
+  --text: #e8f0fe;
+  --muted: rgba(232,240,254,0.4);
+  --border: rgba(79,195,247,0.15);
+  --yellow: rgba(232,200,74,0.15);
+  --yellow-border: rgba(232,200,74,0.4);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  font-family: 'Nunito', sans-serif;
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* APIキー設定画面 */
+#setup-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+
+.setup-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 32px 24px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+}
+
+.setup-logo {
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  margin: 0 auto 16px;
+  box-shadow: 0 0 24px rgba(79,195,247,0.3);
+}
+
+.setup-card h2 {
+  font-size: 22px; font-weight: 900;
+  margin-bottom: 6px;
+}
+.setup-card h2 span { color: var(--accent); }
+.setup-card p {
+  font-size: 13px; color: var(--muted);
+  line-height: 1.8; margin-bottom: 24px;
+}
+
+.setup-input {
+  width: 100%;
+  background: rgba(15,25,35,0.8);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: var(--text);
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  outline: none;
+  margin-bottom: 12px;
+  letter-spacing: 0.05em;
+}
+.setup-input:focus { border-color: var(--accent); }
+.setup-input::placeholder { color: var(--muted); letter-spacing: 0; }
+
+.setup-btn {
+  width: 100%;
+  padding: 13px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  border-radius: 12px;
+  color: #0f1923;
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.setup-btn:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(79,195,247,0.3); }
+
+.setup-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 12px;
+  line-height: 1.6;
+}
+
+/* メイン画面 */
+#main-screen { display: none; flex-direction: column; height: 100vh; }
+
+header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(26,38,53,0.95);
+  display: flex; align-items: center; gap: 12px;
+  flex-shrink: 0;
+  position: sticky; top: 0; z-index: 10;
+}
+
+.logo-circle {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px;
+  box-shadow: 0 0 14px rgba(79,195,247,0.3);
+}
+
+.header-title { font-size: 18px; font-weight: 900; }
+.header-title span { color: var(--accent); }
+.header-sub { font-size: 11px; color: var(--muted); }
+
+.header-btns { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+.speak-btn {
+  background: rgba(79,195,247,0.1);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 12px;
+  color: var(--accent);
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+}
+.speak-btn.on { background: rgba(79,195,247,0.2); }
+.speak-btn:hover { background: rgba(79,195,247,0.25); }
+
+.settings-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 30px; height: 30px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+.settings-btn:hover { color: var(--text); border-color: var(--accent); }
+
+#chat-area {
+  flex: 1; overflow-y: auto;
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 14px;
+  max-height: calc(100vh - 130px);
+}
+
+#chat-area::-webkit-scrollbar { width: 3px; }
+#chat-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.message { display: flex; gap: 10px; align-items: flex-start; animation: fadeUp 0.3s ease; }
+.message.user { flex-direction: row-reverse; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; flex-shrink: 0;
+}
+.avatar.ai { background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+.avatar.user { background: linear-gradient(135deg, var(--accent3), #ef9a9a); }
+
+.bubble-wrap { max-width: 80%; display: flex; flex-direction: column; gap: 6px; }
+.message.user .bubble-wrap { align-items: flex-end; }
+
+.bubble {
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 15px; line-height: 1.8;
+  white-space: pre-wrap; word-break: break-word;
+}
+.message.ai .bubble {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-top-left-radius: 4px;
+}
+.message.user .bubble {
+  background: rgba(255,183,77,0.15);
+  border: 1px solid rgba(255,183,77,0.3);
+  border-top-right-radius: 4px;
+}
+
+.user-image {
+  max-width: 200px; border-radius: 12px;
+  border: 2px solid rgba(255,183,77,0.3);
+  display: block; margin-bottom: 6px;
+}
+
+/* まとめボックス */
+.summary-box {
+  background: var(--yellow);
+  border: 1px solid var(--yellow-border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.9;
+  white-space: pre-wrap;
+}
+
+.summary-box .summary-title {
+  font-size: 13px; font-weight: 900;
+  color: var(--accent3);
+  margin-bottom: 6px;
+  display: flex; align-items: center; gap: 6px;
+}
+
+.read-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px 10px;
+  color: var(--muted); font-size: 11px;
+  cursor: pointer; font-family: 'Nunito', sans-serif;
+  transition: all 0.2s; align-self: flex-start;
+}
+.read-btn:hover { color: var(--accent); border-color: var(--accent); }
+.read-btn.speaking { color: var(--accent); border-color: var(--accent); background: rgba(79,195,247,0.1); }
+
+.thinking-bubble {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; border-top-left-radius: 4px;
+  padding: 12px 16px;
+  display: flex; gap: 5px; align-items: center;
+}
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: blink 1.2s infinite; }
+.dot:nth-child(2) { animation-delay: 0.2s; background: var(--accent2); }
+.dot:nth-child(3) { animation-delay: 0.4s; background: var(--accent3); }
+@keyframes blink {
+  0%,100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.input-wrapper {
+  padding: 10px 14px;
+  background: rgba(26,38,53,0.95);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.input-row {
+  display: flex; gap: 8px; align-items: flex-end;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px; padding: 8px 10px;
+}
+
+textarea {
+  flex: 1; background: transparent;
+  border: none; outline: none;
+  color: var(--text); font-family: 'Nunito', sans-serif;
+  font-size: 15px; line-height: 1.5;
+  resize: none; max-height: 100px; min-height: 24px;
+}
+textarea::placeholder { color: var(--muted); }
+
+.icon-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; transition: all 0.2s; flex-shrink: 0;
+}
+.btn-photo {
+  background: rgba(255,183,77,0.15);
+  border: 1px solid rgba(255,183,77,0.3);
+}
+.btn-photo:hover { background: rgba(255,183,77,0.3); }
+.btn-send {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #0f1923; font-weight: 900;
+}
+.btn-send:hover { transform: scale(1.08); }
+.btn-send:disabled { opacity: 0.4; transform: none; cursor: not-allowed; }
+
+#photo-input { display: none; }
+
+.hint {
+  text-align: center; font-size: 11px;
+  color: rgba(232,240,254,0.2); margin-top: 5px;
+}
+
+.welcome-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 18px; text-align: center;
+}
+.welcome-card h2 { font-size: 20px; font-weight: 900; margin-bottom: 6px; }
+.welcome-card h2 span { color: var(--accent); }
+.welcome-card p { font-size: 13px; color: var(--muted); line-height: 1.8; }
+.tips { display: flex; flex-direction: column; gap: 7px; margin-top: 14px; text-align: left; }
+.tip {
+  background: rgba(79,195,247,0.05); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px 12px; font-size: 13px;
+}
+</style>
+</head>
+<body>
+
+<!-- APIキー設定画面 -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <div class="setup-logo">🌟</div>
+    <h2>まなび<span>AI</span></h2>
+    <p>使い始める前に<br>AnthropicのAPIキーを入力してください。<br>入力したキーはこの端末に保存されます。</p>
+    <input type="password" class="setup-input" id="api-key-input" placeholder="sk-ant-api03-..." />
+    <button class="setup-btn" id="setup-btn">はじめる 🚀</button>
+    <div class="setup-note">
+      🔒 キーはこの端末のみに保存されます<br>
+      console.anthropic.com で取得できます
+    </div>
+  </div>
+</div>
+
+<!-- メイン画面 -->
+<div id="main-screen">
+  <header>
+    <div class="logo-circle">🌟</div>
+    <div>
+      <div class="header-title">まなび<span>AI</span></div>
+      <div class="header-sub">📒 ノートに書いて覚えよう！</div>
+    </div>
+    <div class="header-btns">
+      <button class="speak-btn on" id="speak-btn">🔊 ON</button>
+      <button class="settings-btn" id="settings-btn" title="APIキーを変更">⚙️</button>
+    </div>
+  </header>
+
+  <div id="chat-area">
+    <div class="welcome-card">
+      <h2>こんにちは！<span>まなびAI</span>だよ 👋</h2>
+      <p>わからない問題を写真で送ってね！<br>黄色いボックスをノートに書き写そう 📒</p>
+      <div class="tips">
+        <div class="tip">📸 問題集の写真を撮って送る</div>
+        <div class="tip">💬 「ここがわからない」って話しかける</div>
+        <div class="tip">📝 黄色いまとめをノートに書き写す</div>
+        <div class="tip">🔊 右上のボタンで読み上げON/OFF</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-wrapper">
+    <div class="input-row">
+      <textarea id="user-input" placeholder="わからないことを教えてね..." rows="1"></textarea>
+      <button class="icon-btn btn-photo" id="photo-btn">📸</button>
+      <button class="icon-btn btn-send" id="send-btn">➤</button>
+    </div>
+    <div class="hint">Enterで送信　／　黄色いまとめをノートに書こう 📒</div>
+  </div>
+</div>
+
+<input type="file" id="photo-input" accept="image/*" capture="environment">
+
+<script>
+const SYSTEM_PROMPT = `あなたは中学1年生の女の子の数学を教えるやさしいAIです。
+
+この子の特徴：
+- 文章の理解が苦手
+- ノートに書き写しながら勉強するスタイル
+- 図や絵で見た方が理解しやすい
+- 小学校の算数が抜けているところがある
+
+説明のルール：
+1. 一文は短く・シンプルに（20文字以内）
+2. 難しい言葉は使わない
+3. 「すごい！」「いい感じ！」など励ましを入れる
+4. 一度に教えることは一つだけ
+5. 間違いは責めず「惜しい！こう考えてみて」と言う
+6. 絵文字をたくさん使う
+7. ステップは①②③で番号をつける
+
+必ず最後に以下の形式でまとめを書く：
+[SUMMARY]
+① （ポイント1・短く）
+② （ポイント2・短く）
+③ （ポイント3・短く、なければ省略OK）
+[/SUMMARY]
+
+このまとめ部分だけノートに書き写せばOK。3行以内・シンプルに。`;
+
+// 要素
+const setupScreen = document.getElementById('setup-screen');
+const mainScreen = document.getElementById('main-screen');
+const apiKeyInput = document.getElementById('api-key-input');
+const setupBtn = document.getElementById('setup-btn');
+const settingsBtn = document.getElementById('settings-btn');
+const chatArea = document.getElementById('chat-area');
+const userInput = document.getElementById('user-input');
+const sendBtn = document.getElementById('send-btn');
+const photoBtn = document.getElementById('photo-btn');
+const photoInput = document.getElementById('photo-input');
+const speakBtn = document.getElementById('speak-btn');
+
+let apiKey = '';
+let history = [];
+let speakEnabled = true;
+let pendingImage = null;
+let pendingImageBase64 = null;
+
+// 起動時にAPIキーを確認
+window.onload = () => {
+  const saved = localStorage.getItem('manabiAI_key');
+  if (saved) {
+    apiKey = saved;
+    showMain();
+  }
+};
+
+// APIキー設定
+setupBtn.addEventListener('click', () => {
+  const key = apiKeyInput.value.trim();
+  if (!key.startsWith('sk-ant-')) {
+    apiKeyInput.style.borderColor = '#ef9a9a';
+    apiKeyInput.placeholder = 'sk-ant- から始まるキーを入力してね';
+    return;
+  }
+  apiKey = key;
+  localStorage.setItem('manabiAI_key', key);
+  showMain();
+});
+
+apiKeyInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') setupBtn.click();
+});
+
+// 設定ボタン（キー変更）
+settingsBtn.addEventListener('click', () => {
+  if (confirm('APIキーを変更しますか？')) {
+    localStorage.removeItem('manabiAI_key');
+    location.reload();
+  }
+});
+
+function showMain() {
+  setupScreen.style.display = 'none';
+  mainScreen.style.display = 'flex';
+  setTimeout(() => {
+    const msg = 'こんにちは！まなびAIだよ 🌟\nわからない問題があったら写真を撮って送ってね！\n\n今どんな勉強してる？📚';
+    addAIMessage(msg);
+    history.push({ role: 'assistant', content: msg });
+  }, 400);
+}
+
+// 読み上げ
+speakBtn.addEventListener('click', () => {
+  speakEnabled = !speakEnabled;
+  speakBtn.textContent = speakEnabled ? '🔊 ON' : '🔇 OFF';
+  speakBtn.classList.toggle('on', speakEnabled);
+  if (!speakEnabled && window.speechSynthesis) window.speechSynthesis.cancel();
+});
+
+function speak(text, btn) {
+  if (!speakEnabled || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const clean = text.replace(/[🌟👋📸💬📒📝🔊①②③]/g, '');
+  const utter = new window.SpeechSynthesisUtterance(clean);
+  utter.lang = 'ja-JP'; utter.rate = 0.9; utter.pitch = 1.1;
+  if (btn) {
+    btn.classList.add('speaking');
+    btn.textContent = '⏹ 止める';
+    utter.onend = () => { btn.classList.remove('speaking'); btn.textContent = '🔊 読む'; };
+  }
+  window.speechSynthesis.speak(utter);
+}
+
+// 写真
+photoBtn.addEventListener('click', () => photoInput.click());
+photoInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    pendingImage = ev.target.result;
+    pendingImageBase64 = ev.target.result.split(',')[1];
+    photoBtn.textContent = '✅';
+    photoBtn.style.background = 'rgba(129,199,132,0.3)';
+    userInput.placeholder = 'コメントがあれば書いてね（なくてもOK）';
+  };
+  reader.readAsDataURL(file);
+  photoInput.value = '';
+});
+
+// メッセージ追加
+function addUserMessage(text, imageUrl) {
+  const div = document.createElement('div');
+  div.className = 'message user';
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar user';
+  avatar.textContent = '👧';
+  const wrap = document.createElement('div');
+  wrap.className = 'bubble-wrap';
+  if (imageUrl) {
+    const img = document.createElement('img');
+    img.className = 'user-image'; img.src = imageUrl;
+    wrap.appendChild(img);
+  }
+  if (text) {
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble'; bubble.textContent = text;
+    wrap.appendChild(bubble);
+  }
+  div.appendChild(avatar); div.appendChild(wrap);
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function addAIMessage(text) {
+  const summaryMatch = text.match(/\[SUMMARY\]([\s\S]*?)\[\/SUMMARY\]/);
+  const summary = summaryMatch ? summaryMatch[1].trim() : null;
+  const mainText = text.replace(/\[SUMMARY\][\s\S]*?\[\/SUMMARY\]/g, '').trim();
+
+  const div = document.createElement('div');
+  div.className = 'message ai';
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar ai'; avatar.textContent = '🌟';
+  const wrap = document.createElement('div');
+  wrap.className = 'bubble-wrap';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble'; bubble.textContent = mainText;
+  wrap.appendChild(bubble);
+
+  if (summary) {
+    const box = document.createElement('div');
+    box.className = 'summary-box';
+    const title = document.createElement('div');
+    title.className = 'summary-title';
+    title.textContent = '📝 ノートに書こう！';
+    box.appendChild(title);
+    const content = document.createElement('div');
+    content.textContent = summary;
+    box.appendChild(content);
+    wrap.appendChild(box);
+  }
+
+  const readBtn = document.createElement('button');
+  readBtn.className = 'read-btn'; readBtn.textContent = '🔊 読む';
+  readBtn.addEventListener('click', () => {
+    if (readBtn.classList.contains('speaking')) {
+      window.speechSynthesis.cancel();
+      readBtn.classList.remove('speaking'); readBtn.textContent = '🔊 読む';
+    } else {
+      speak(mainText + (summary || ''), readBtn);
+    }
+  });
+  wrap.appendChild(readBtn);
+
+  div.appendChild(avatar); div.appendChild(wrap);
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  speak(mainText + (summary ? ' まとめ。' + summary : ''), readBtn);
+}
+
+function addThinking() {
+  const div = document.createElement('div');
+  div.className = 'message ai'; div.id = 'thinking';
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar ai'; avatar.textContent = '🌟';
+  const bubble = document.createElement('div');
+  bubble.className = 'thinking-bubble';
+  bubble.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+  div.appendChild(avatar); div.appendChild(bubble);
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function removeThinking() {
+  const t = document.getElementById('thinking');
+  if (t) t.remove();
+}
+
+async function sendMessage() {
+  const text = userInput.value.trim();
+  if (!text && !pendingImage) return;
+
+  addUserMessage(text, pendingImage);
+  userInput.value = ''; autoResize();
+  sendBtn.disabled = true; addThinking();
+
+  let userContent = [];
+  if (pendingImageBase64) {
+    userContent.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: pendingImageBase64 } });
+  }
+  userContent.push({ type: 'text', text: text || '写真の問題を解説してください。' });
+  history.push({ role: 'user', content: userContent });
+
+  pendingImage = null; pendingImageBase64 = null;
+  photoBtn.textContent = '📸'; photoBtn.style.background = '';
+  userInput.placeholder = 'わからないことを教えてね...';
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: history
+      })
+    });
+
+    const data = await resp.json();
+    removeThinking();
+    const fullText = data.content[0].text;
+    addAIMessage(fullText);
+    history.push({ role: 'assistant', content: fullText });
+
+  } catch (e) {
+    removeThinking();
+    addAIMessage('ごめんね、うまく繋がらなかった。\nもう一回送ってみて！');
+  }
+  sendBtn.disabled = false;
+}
+
+sendBtn.addEventListener('click', sendMessage);
+userInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+function autoResize() {
+  userInput.style.height = 'auto';
+  userInput.style.height = userInput.scrollHeight + 'px';
+}
+userInput.addEventListener('input', autoResize);
+</script>
+</body>
+</html>
