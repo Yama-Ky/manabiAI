@@ -538,18 +538,60 @@ speakBtn.addEventListener('click', () => {
   if (!speakEnabled && window.speechSynthesis) window.speechSynthesis.cancel();
 });
 
+// 日本語ボイスを事前選択
+let jaVoice = null;
+function loadJaVoice() {
+  const voices = window.speechSynthesis.getVoices();
+  jaVoice =
+    voices.find(v => v.lang === 'ja-JP' && v.localService) ||
+    voices.find(v => v.lang === 'ja-JP') ||
+    voices.find(v => v.lang.startsWith('ja')) ||
+    null;
+}
+if (window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = loadJaVoice;
+  loadJaVoice();
+}
+
 function speak(text, btn) {
   if (!speakEnabled || !window.speechSynthesis) return;
   window.speechSynthesis.cancel();
-  const clean = text.replace(/[🌟👋📸💬📒📝🔊①②③]/g, '');
-  const utter = new window.SpeechSynthesisUtterance(clean);
-  utter.lang = 'ja-JP'; utter.rate = 0.9; utter.pitch = 1.1;
+
+  const clean = text
+    .replace(/\p{Emoji}/gu, '')
+    .replace(/[①②③④⑤←→↑↓─]/g, '')
+    .replace(/\[.*?\]/g, '')
+    .trim();
+
+  if (!clean) return;
+
+  const sentences = clean.split(/(?<=[。！？\n])/).filter(s => s.trim());
+  if (sentences.length === 0) return;
+  let idx = 0;
+
   if (btn) {
     btn.classList.add('speaking');
     btn.textContent = '⏹ 止める';
-    utter.onend = () => { btn.classList.remove('speaking'); btn.textContent = '🔊 読む'; };
   }
-  window.speechSynthesis.speak(utter);
+
+  function readNext() {
+    if (idx >= sentences.length) {
+      if (btn) { btn.classList.remove('speaking'); btn.textContent = '🔊 読む'; }
+      return;
+    }
+    const utter = new window.SpeechSynthesisUtterance(sentences[idx].trim());
+    utter.lang = 'ja-JP';
+    utter.rate = 0.88;
+    utter.pitch = 1.05;
+    utter.volume = 1.0;
+    if (jaVoice) utter.voice = jaVoice;
+    currentUtterance = utter;
+    utter.onend = () => { idx++; readNext(); };
+    utter.onerror = () => { idx++; readNext(); };
+    window.speechSynthesis.speak(utter);
+  }
+
+  readNext();
 }
 
 // 写真
